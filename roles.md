@@ -10,8 +10,9 @@ graph TD
     A --> E[DelayedWithdraw]
     A --> F[ManagerWithMerkleVerification]
     A --> G[BoringGovernance]
-    B --> H[AccountantWithFixedRate]
-    C --> I[TellerWithRemediation]
+    A --> H[BoringVaultUpgradeable]
+    B --> I[AccountantWithFixedRate]
+    C --> J[TellerWithRemediation]
 ```
 
 ## BoringGovernance Analysis
@@ -113,6 +114,136 @@ graph TD
    - Voting power tracking
    - Delegation support
    - Custom decimal handling
+
+## BoringVaultUpgradeable Analysis
+
+```mermaid
+graph TD
+    A[BoringVaultUpgradeable] --> B[BoringVault]
+    A --> C[Initializable]
+    A --> D[IL1cmETH]
+    A --> E[Authority]
+```
+
+### Key Features
+1. **Upgradeable Implementation**
+   - Inherits from BoringVault
+   - Uses OpenZeppelin's Initializable
+   - Supports proxy pattern
+
+2. **Initialization**
+   ```mermaid
+   sequenceDiagram
+       participant D as Deployer
+       participant P as Proxy
+       participant I as Implementation
+       
+       D->>P: Deploy Proxy
+       D->>I: Deploy Implementation
+       D->>P: initialize(owner, auth, cmETH)
+       P->>I: delegatecall initialize
+   ```
+   - One-time initialization
+   - Sets owner and authority
+   - Configures cmETH integration
+
+3. **Security Measures**
+   - Constructor disables initializers
+   - Initialization can only happen once
+   - Proper authorization checks
+
+### Implementation Details
+
+1. **Constructor**
+   ```solidity
+   constructor() BoringVault(address(0), address(0)) {
+       _disableInitializers();
+   }
+   ```
+   - Disables initializers on implementation
+   - Prevents direct initialization
+   - Sets zero addresses for base constructor
+
+2. **Initialize Function**
+   ```solidity
+   function initialize(
+       address _owner,
+       address _auth,
+       address _cmETH
+   ) external initializer {
+       owner = _owner;
+       authority = Authority(_auth);
+       cmETH = IL1cmETH(_cmETH);
+   }
+   ```
+   - Sets initial state
+   - Configures authorization
+   - Sets up cmETH integration
+
+### Security Considerations
+
+1. **Initialization Protection**
+   ```mermaid
+   graph TD
+       A[Implementation] --> B[Disable Initializers]
+       C[Proxy] --> D[Initialize Once]
+       E[Attacker] --> F[Prevented]
+   ```
+   - Implementation cannot be initialized
+   - Proxy can only initialize once
+   - Prevents reinitialization attacks
+
+2. **Authorization Flow**
+   ```mermaid
+   sequenceDiagram
+       participant U as User
+       participant P as Proxy
+       participant I as Implementation
+       participant A as Authority
+       
+       U->>P: Call Function
+       P->>I: delegatecall
+       I->>A: Check Auth
+       A-->>I: Auth Result
+       I-->>P: Function Result
+       P-->>U: Result
+   ```
+   - Proper authorization checks
+   - Authority validation
+   - Role-based access control
+
+3. **cmETH Integration**
+   ```mermaid
+   graph LR
+       A[Vault] --> B[cmETH]
+       B --> C[L1 Operations]
+       C --> D[Asset Management]
+   ```
+   - Secure cmETH interface
+   - L1 asset management
+   - Cross-chain operations
+
+### Security Measures
+
+1. **Upgrade Protection**
+   - Implementation cannot be initialized
+   - Proxy initialization control
+   - Proper authorization checks
+
+2. **State Management**
+   - One-time initialization
+   - Secure state transitions
+   - Event logging
+
+3. **Access Control**
+   - Role-based authorization
+   - Authority validation
+   - Owner controls
+
+4. **Cross-Chain Safety**
+   - Secure cmETH integration
+   - L1 asset management
+   - Cross-chain validation
 
 ## Security Analysis
 
