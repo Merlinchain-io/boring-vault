@@ -9,9 +9,110 @@ graph TD
     A --> D[WithdrawQueue]
     A --> E[DelayedWithdraw]
     A --> F[ManagerWithMerkleVerification]
-    B --> G[AccountantWithFixedRate]
-    C --> H[TellerWithRemediation]
+    A --> G[BoringGovernance]
+    B --> H[AccountantWithFixedRate]
+    C --> I[TellerWithRemediation]
 ```
+
+## BoringGovernance Analysis
+
+```mermaid
+graph TD
+    A[BoringGovernance] --> B[ERC20Votes]
+    A --> C[Auth]
+    A --> D[ERC721Holder]
+    A --> E[ERC1155Holder]
+    A --> F[BeforeTransferHook]
+    A --> G[ShareLocker]
+```
+
+### Key Features
+1. **Governance Token**
+   - ERC20Votes implementation for voting power
+   - Custom decimals support
+   - Transfer hooks for additional control
+
+2. **Access Control**
+   - Role-based authorization (Auth)
+   - Manager functions for arbitrary calls
+   - Minter/Burner roles for share management
+
+3. **Asset Management**
+   - Enter/Exit functions for share minting/burning
+   - Support for multiple asset types
+   - Safe transfer implementations
+
+4. **Transfer Controls**
+   - BeforeTransferHook for pre-transfer checks
+   - ShareLocker for transfer restrictions
+   - EIP712 support for typed signatures
+
+### Security Considerations
+
+1. **Manager Functions**
+   ```mermaid
+   sequenceDiagram
+       participant M as Manager
+       participant G as Governance
+       participant T as Target
+       
+       M->>G: manage(target, data, value)
+       G->>T: functionCallWithValue
+       T-->>G: result
+       G-->>M: result
+   ```
+   - Allows arbitrary function calls
+   - Requires proper authorization
+   - Potential for delegatecall attacks
+
+2. **Share Management**
+   ```mermaid
+   sequenceDiagram
+       participant A as Authorized
+       participant G as Governance
+       participant U as User
+       
+       A->>G: enter(from, asset, amount, to, shares)
+       G->>U: safeTransferFrom
+       G->>G: _mint
+   ```
+   - Controlled by MINTER_ROLE
+   - Safe transfer implementations
+   - Event emission for tracking
+
+3. **Transfer Hooks**
+   ```mermaid
+   graph LR
+       A[Transfer] --> B[BeforeTransferHook]
+       A --> C[ShareLocker]
+       B --> D[Validation]
+       C --> E[Restrictions]
+   ```
+   - Pre-transfer validation
+   - Share locking mechanisms
+   - Custom transfer rules
+
+### Security Measures
+
+1. **Access Control**
+   - Role-based authorization
+   - Manager function restrictions
+   - Transfer hook validations
+
+2. **Asset Safety**
+   - Safe transfer implementations
+   - Event logging
+   - Balance checks
+
+3. **Transfer Protection**
+   - Pre-transfer hooks
+   - Share locking
+   - EIP712 signatures
+
+4. **Governance Features**
+   - Voting power tracking
+   - Delegation support
+   - Custom decimal handling
 
 ## Security Analysis
 
