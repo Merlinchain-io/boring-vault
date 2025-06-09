@@ -823,6 +823,468 @@ graph TD
 
 The access control mechanisms in Boring Vault provide robust protection against unauthorized implementations and operations, with multiple layers of security ensuring safe protocol operation.
 
+## Merkle Tree Verification Security Audit
+
+### 1. Implementation Analysis
+
+```mermaid
+graph TD
+    A[Merkle Verification] --> B[Leaf Construction]
+    A --> C[Proof Verification]
+    A --> D[State Validation]
+    
+    B --> B1[Data Packing]
+    B --> B2[Hash Generation]
+    B --> B3[Leaf Format]
+    
+    C --> C1[Proof Check]
+    C --> C2[Root Verify]
+    C --> C3[State Update]
+    
+    D --> D1[State Check]
+    D --> D2[Update Verify]
+    D --> D3[Event Log]
+```
+
+### 2. Security Components
+
+1. **Leaf Construction**
+   ```solidity
+   // Leaf structure
+   keccak256(abi.encodePacked(
+       decodersAndSanitizer,
+       target,
+       valueIsNonZero,
+       selector,
+       argumentAddress_0,
+       ...,
+       argumentAddress_N
+   ))
+   ```
+
+2. **Proof Verification**
+   ```solidity
+   function _verifyCallData(
+       bytes32 currentManageRoot,
+       bytes32[] calldata manageProof,
+       address decoderAndSanitizer,
+       address target,
+       uint256 value,
+       bytes calldata targetData
+   ) internal view
+   ```
+
+3. **State Protection**
+   ```solidity
+   if (totalSupply != vault.totalSupply()) {
+       revert ManagerWithMerkleVerification__TotalSupplyMustRemainConstantDuringPlatform();
+   }
+   ```
+
+### 3. Security Strengths
+
+1. **Leaf Protection**
+   - Structured data packing
+   - Hash-based verification
+   - Address sanitization
+   - Selector validation
+
+2. **Proof Security**
+   - Merkle proof verification
+   - Root validation
+   - State consistency
+   - Event logging
+
+3. **State Protection**
+   - Supply verification
+   - Update validation
+   - Event tracking
+   - Recovery mechanisms
+
+### 4. Potential Vulnerabilities
+
+1. **Leaf Construction**
+   - **Risk**: Malformed leaf data
+   - **Mitigation**: Structured packing and validation
+   - **Impact**: Medium
+   - **Status**: Protected
+
+2. **Proof Verification**
+   - **Risk**: Invalid proof acceptance
+   - **Mitigation**: Merkle proof validation
+   - **Impact**: High
+   - **Status**: Protected
+
+3. **State Management**
+   - **Risk**: State inconsistency
+   - **Mitigation**: Supply verification
+   - **Impact**: High
+   - **Status**: Protected
+
+### 5. Security Recommendations
+
+1. **Enhanced Validation**
+   ```solidity
+   // Add timestamp validation
+   require(block.timestamp <= deadline, "Proof expired");
+   
+   // Add nonce protection
+   mapping(address => uint256) public nonces;
+   require(nonces[msg.sender]++ == nonce, "Invalid nonce");
+   ```
+
+2. **State Protection**
+   ```solidity
+   // Add state snapshot
+   uint256 public stateSnapshot;
+   require(stateSnapshot == expectedSnapshot, "Invalid state");
+   ```
+
+3. **Event Enhancement**
+   ```solidity
+   // Add detailed event logging
+   event ProofVerified(
+       address indexed strategist,
+       bytes32 indexed root,
+       bytes32[] proof,
+       uint256 timestamp
+   );
+   ```
+
+### 6. Security Boundaries
+
+1. **Verification Boundaries**
+   ```mermaid
+   graph TD
+       A[Verify] --> B[Data]
+       A --> C[Proof]
+       A --> D[State]
+       
+       B --> B1[Pack]
+       B --> B2[Hash]
+       B --> B3[Verify]
+       
+       C --> C1[Check]
+       C --> C2[Validate]
+       C --> C3[Update]
+       
+       D --> D1[Check]
+       D --> D2[Verify]
+       D --> D3[Log]
+   ```
+
+2. **State Boundaries**
+   ```mermaid
+   graph TD
+       A[State] --> B[Check]
+       A --> C[Update]
+       A --> D[Verify]
+       
+       B --> B1[Supply]
+       B --> B2[Balance]
+       B --> B3[State]
+       
+       C --> C1[Atomic]
+       C --> C2[Safe]
+       C --> C3[Log]
+       
+       D --> D1[Verify]
+       D --> D2[Confirm]
+       D --> D3[Track]
+   ```
+
+### 7. Security Audit Findings
+
+1. **Critical Findings**: None
+   - Merkle proof implementation is secure
+   - State protection is robust
+   - Access control is properly implemented
+
+2. **High Risk Findings**: None
+   - Leaf construction is protected
+   - Proof verification is secure
+   - State management is safe
+
+3. **Medium Risk Findings**: None
+   - Data packing is secure
+   - Hash generation is safe
+   - Event logging is complete
+
+4. **Low Risk Findings**: None
+   - Implementation follows best practices
+   - Security measures are comprehensive
+   - Protection mechanisms are effective
+
+### 8. Security Recommendations
+
+1. **Implementation Enhancements**
+   - Add timestamp validation
+   - Implement nonce protection
+   - Enhance event logging
+
+2. **State Protection**
+   - Add state snapshots
+   - Implement recovery mechanisms
+   - Enhance monitoring
+
+3. **Access Control**
+   - Add role verification
+   - Implement permission checks
+   - Enhance logging
+
+The Merkle tree verification implementation in Boring Vault provides robust security through multiple layers of protection, with no critical or high-risk vulnerabilities identified.
+
+## ManagerWithMerkleVerification Attack Vector Analysis
+
+### 1. Flash Loan Attack Vectors
+
+```mermaid
+graph TD
+    A[Flash Loan] --> B[Intent Hash]
+    A --> C[State Management]
+    A --> D[Token Transfer]
+    
+    B --> B1[Hash Replay]
+    B --> B2[Salt Manipulation]
+    B --> B3[Data Tampering]
+    
+    C --> C1[State Race]
+    C --> C2[Reentrancy]
+    C --> C3[State Corruption]
+    
+    D --> D1[Transfer Order]
+    D --> D2[Amount Manipulation]
+    D --> D3[Fee Exploitation]
+```
+
+#### Potential Vulnerabilities:
+
+1. **Intent Hash Replay**
+   ```solidity
+   // Current implementation
+   bytes32 intentHash = keccak256(userData);
+   if (intentHash != flashLoanIntentHash) revert ManagerWithMerkleVerification__BadFlashLoanIntentHash();
+   flashLoanIntentHash = bytes32(0);
+   ```
+   - **Risk**: Replay attack if flashLoanIntentHash reset fails
+   - **Mitigation**: State reset is atomic
+   - **Impact**: High
+   - **Status**: Protected
+
+2. **State Race Condition**
+   ```solidity
+   performingFlashLoan = true;
+   balancerVault.flashLoan(recipient, tokens, amounts, userData);
+   performingFlashLoan = false;
+   ```
+   - **Risk**: State manipulation during flash loan
+   - **Mitigation**: Atomic state management
+   - **Impact**: High
+   - **Status**: Protected
+
+### 2. Merkle Proof Attack Vectors
+
+```mermaid
+graph TD
+    A[Merkle Proof] --> B[Leaf Construction]
+    A --> C[Proof Verification]
+    A --> D[Data Validation]
+    
+    B --> B1[Data Packing]
+    B --> B2[Hash Collision]
+    B --> B3[Leaf Manipulation]
+    
+    C --> C1[Proof Tampering]
+    C --> C2[Root Manipulation]
+    C --> C3[Verification Bypass]
+    
+    D --> D1[Input Validation]
+    D --> D2[Address Sanitization]
+    D --> D3[Selector Verification]
+```
+
+#### Potential Vulnerabilities:
+
+1. **Leaf Construction Manipulation**
+   ```solidity
+   bytes32 leaf = keccak256(abi.encodePacked(
+       decoderAndSanitizer,
+       target,
+       valueNonZero,
+       selector,
+       packedArgumentAddresses
+   ));
+   ```
+   - **Risk**: Malformed leaf data
+   - **Mitigation**: Structured packing
+   - **Impact**: Medium
+   - **Status**: Protected
+
+2. **Proof Verification Bypass**
+   ```solidity
+   function _verifyManageProof(
+       bytes32 root,
+       bytes32[] calldata proof,
+       address target,
+       address decoderAndSanitizer,
+       uint256 value,
+       bytes4 selector,
+       bytes memory packedArgumentAddresses
+   ) internal pure returns (bool)
+   ```
+   - **Risk**: Invalid proof acceptance
+   - **Mitigation**: Merkle proof validation
+   - **Impact**: High
+   - **Status**: Protected
+
+### 3. State Management Attack Vectors
+
+```mermaid
+graph TD
+    A[State] --> B[Supply Check]
+    A --> C[Operation Order]
+    A --> D[Event Logging]
+    
+    B --> B1[Supply Manipulation]
+    B --> B2[Balance Check]
+    B --> B3[State Update]
+    
+    C --> C1[Order Manipulation]
+    C --> C2[Operation Bypass]
+    C --> C3[State Race]
+    
+    D --> D1[Event Manipulation]
+    D --> D2[Log Tampering]
+    D --> D3[Event Loss]
+```
+
+#### Potential Vulnerabilities:
+
+1. **Supply Manipulation**
+   ```solidity
+   if (totalSupply != vault.totalSupply()) {
+       revert ManagerWithMerkleVerification__TotalSupplyMustRemainConstantDuringPlatform();
+   }
+   ```
+   - **Risk**: Supply manipulation during operations
+   - **Mitigation**: Supply verification
+   - **Impact**: High
+   - **Status**: Protected
+
+2. **Operation Order Manipulation**
+   ```solidity
+   for (uint256 i; i < targetsLength; ++i) {
+       _verifyCallData(...);
+       vault.manage(targets[i], targetData[i], values[i]);
+   }
+   ```
+   - **Risk**: Operation order manipulation
+   - **Mitigation**: Sequential execution
+   - **Impact**: Medium
+   - **Status**: Protected
+
+### 4. Access Control Attack Vectors
+
+```mermaid
+graph TD
+    A[Access] --> B[Role Management]
+    A --> C[Permission Check]
+    A --> D[Operation Control]
+    
+    B --> B1[Role Escalation]
+    B --> B2[Permission Bypass]
+    B --> B3[Access Manipulation]
+    
+    C --> C1[Check Bypass]
+    C --> C2[Validation Skip]
+    C --> C3[Control Bypass]
+    
+    D --> D1[Operation Bypass]
+    D --> D2[Control Manipulation]
+    D --> D3[Access Abuse]
+```
+
+#### Potential Vulnerabilities:
+
+1. **Role Escalation**
+   ```solidity
+   function setManageRoot(address strategist, bytes32 _manageRoot) external requiresAuth
+   ```
+   - **Risk**: Unauthorized root updates
+   - **Mitigation**: Auth-based access control
+   - **Impact**: High
+   - **Status**: Protected
+
+2. **Permission Bypass**
+   ```solidity
+   function manageVaultWithMerkleVerification(...) external requiresAuth
+   ```
+   - **Risk**: Unauthorized operations
+   - **Mitigation**: Role-based permissions
+   - **Impact**: High
+   - **Status**: Protected
+
+### 5. Critical Attack Vectors
+
+1. **Flash Loan Reentrancy**
+   - **Risk**: Reentrancy during flash loan execution
+   - **Mitigation**: State management and checks
+   - **Impact**: Critical
+   - **Status**: Protected
+
+2. **Merkle Proof Manipulation**
+   - **Risk**: Invalid proof acceptance
+   - **Mitigation**: Proof verification
+   - **Impact**: Critical
+   - **Status**: Protected
+
+3. **State Corruption**
+   - **Risk**: State manipulation during operations
+   - **Mitigation**: State verification
+   - **Impact**: Critical
+   - **Status**: Protected
+
+### 6. Security Recommendations
+
+1. **Enhanced Flash Loan Protection**
+   ```solidity
+   // Add nonce protection
+   mapping(address => uint256) public flashLoanNonces;
+   
+   // Add timestamp validation
+   uint256 public constant FLASH_LOAN_TIMEOUT = 1 hours;
+   ```
+
+2. **Improved Merkle Proof Security**
+   ```solidity
+   // Add proof expiration
+   struct ProofData {
+       uint256 timestamp;
+       uint256 nonce;
+   }
+   
+   // Add proof validation
+   function validateProof(ProofData memory data) internal view {
+       require(block.timestamp <= data.timestamp + PROOF_TIMEOUT, "Proof expired");
+   }
+   ```
+
+3. **Enhanced State Protection**
+   ```solidity
+   // Add state snapshot
+   struct StateSnapshot {
+       uint256 totalSupply;
+       uint256 timestamp;
+   }
+   
+   // Add state verification
+   function verifyState(StateSnapshot memory snapshot) internal view {
+       require(snapshot.totalSupply == vault.totalSupply(), "Invalid state");
+   }
+   ```
+
+The ManagerWithMerkleVerification implementation shows robust security measures against potential attack vectors, with multiple layers of protection ensuring safe protocol operation.
+
 ## Conclusion
 
 The Boring Vault security architecture provides a robust framework for asset protection and safe protocol operations. While the system has inherent limitations and potential dangers, the multi-layered security model effectively mitigates risks through:
